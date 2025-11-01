@@ -32,7 +32,7 @@ type Package struct {
 	InstallIf     []string `json:"install_if,omitempty"`
 	Repo          string   `json:"repo"`
 	Architectures []string `json:"architectures,omitempty"`
-	SourceRepo    string   `json:"source_repo,omitempty"` // Yeni: Kaynak repo (çakışma çözümü için)
+	SourceRepo    string   `json:"source_repo,omitempty"`
 }
 
 // Hafif paket bilgisi (liste için)
@@ -111,13 +111,13 @@ func main() {
 	combinedPackages := combineAndResolvePackages(allPackagesByArch)
 
 	// JSON veritabanını oluştur
-	fmt.Printf("\n--- JSON Veritabanı Oluşturuluyor ---\n")
-	if err := createPackageDatabase(combinedPackages, OUTPUT_FILE); err != nil {
+	fmt.Printf("\n--- Minified JSON Oluşturuluyor ---\n")
+	if err := createMinifiedPackageDatabase(combinedPackages, OUTPUT_FILE); err != nil {
 		fmt.Printf("❌ JSON oluşturma hatası: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("🎉 Başarılı! Toplam %d paket '%s' dosyasına kaydedildi.\n", len(combinedPackages), OUTPUT_FILE)
+	fmt.Printf("🎉 Başarılı! Minified packages.json oluşturuldu.\n")
 }
 
 // Repo anahtarından görünen ismi al
@@ -386,7 +386,8 @@ func parseAPKIndex(url string, repo string, sourceRepo string, arch string) ([]P
 	return packages, nil
 }
 
-func createPackageDatabase(packages []Package, filename string) error {
+// Minified JSON veritabanını oluştur
+func createMinifiedPackageDatabase(packages []Package, filename string) error {
 	// Hafif paket listesi oluştur
 	packagesLight := []PackageLight{}
 	// Detaylı paket bilgileri
@@ -455,19 +456,25 @@ func createPackageDatabase(packages []Package, filename string) error {
 		Metadata: metadata,
 	}
 
-	// JSON'a dönüştür ve kaydet
-	jsonData, err := json.MarshalIndent(database, "", "  ")
+	// Minified JSON oluştur (boşluksuz)
+	fmt.Printf("📝 Minified JSON oluşturuluyor...\n")
+	jsonData, err := json.Marshal(database)
 	if err != nil {
 		return fmt.Errorf("JSON'a dönüştürme hatası: %w", err)
 	}
 
+	// Dosyaya yaz
 	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
 		return fmt.Errorf("dosyaya yazma hatası: %w", err)
 	}
 
+	// Boyut istatistiklerini göster
+	fileInfo, _ := os.Stat(filename)
+	fileSize := fileInfo.Size()
+
 	// İstatistikleri yazdır
-	fmt.Printf("\n📊 Detaylı İstatistikler:\n")
+	fmt.Printf("\n📊 İstatistikler:\n")
 	fmt.Printf("   • Toplam Paket: %d\n", len(packages))
 	fmt.Printf("   • Repolar:\n")
 	for repo, count := range repoCounts {
@@ -481,6 +488,7 @@ func createPackageDatabase(packages []Package, filename string) error {
 	for arch, count := range archCounts {
 		fmt.Printf("     - %s: %d\n", arch, count)
 	}
+	fmt.Printf("   • Dosya Boyutu: %d bytes (%.2f MB)\n", fileSize, float64(fileSize)/1024/1024)
 	fmt.Printf("   • Toplam Paket Boyutu: %d MB\n", totalPackageSize/1024/1024)
 	fmt.Printf("   • Toplam Kurulum Boyutu: %d MB\n", totalInstalledSize/1024/1024)
 
