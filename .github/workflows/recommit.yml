@@ -1,0 +1,56 @@
+name: Auto Recommit
+
+on:
+  schedule:
+    # Her 12 saatte bir çalışır (00:00 ve 12:00)
+    - cron: '0 */12 * * *'
+  workflow_dispatch: # Manuel çalıştırma için
+
+jobs:
+  recommit-packages-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Packages-Json branch
+        uses: actions/checkout@v4
+        with:
+          ref: Packages-Json
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Create recommit for Packages-Json
+        run: |
+          echo "Auto recommit - $(date)" >> .recommit-log
+          git add .recommit-log
+          git commit -m "🔄 Auto recommit - $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
+
+  recommit-main:
+    runs-on: ubuntu-latest
+    needs: recommit-packages-json
+    steps:
+      - name: Wait 15 seconds
+        run: sleep 15
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Create recommit for main
+        run: |
+          echo "Auto recommit - $(date)" >> .recommit-log
+          git add .recommit-log
+          git commit -m "🔄 Auto recommit - $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
