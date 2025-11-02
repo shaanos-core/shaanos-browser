@@ -1,4 +1,3 @@
-'use server';
 
 import type { AlpinePackage, PackagesResponse } from '@/lib/types';
 
@@ -6,13 +5,8 @@ import type { AlpinePackage, PackagesResponse } from '@/lib/types';
 const PACKAGES_URL = '/packages.json';
 
 async function fetchAllPackageData(): Promise<PackagesResponse> {
-    // We need to construct the full URL for server-side fetching during build.
-    // This assumes the app is running at http://localhost:9002 during development.
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? '' 
-      : 'http://localhost:9002';
-      
-    const response = await fetch(`${baseUrl}${PACKAGES_URL}`);
+    // For a static site, we can fetch directly from the public path.
+    const response = await fetch(PACKAGES_URL);
     
     if (!response.ok) {
       throw new Error('Failed to fetch packages:' + response.statusText);
